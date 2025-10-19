@@ -321,6 +321,7 @@
                 { id: 'students', icon: 'fas fa-users', text: 'Kelola Siswa' },
                 { id: 'attendance-reports', icon: 'fas fa-clipboard-list', text: 'Laporan Absensi' },
                 { id: 'teacher-attendance', icon: 'fas fa-map-marker-alt', text: 'Kehadiran Guru' },
+                { id: 'teacher-attendance-reports', icon: 'fas fa-chalkboard-teacher', text: 'Laporan Kehadiran Guru' },
                 { id: 'attendance-categories', icon: 'fas fa-exclamation-triangle', text: 'Kategori Kehadiran' },
                 { id: 'whatsapp-messages', icon: 'fas fa-comments', text: 'Pesan WhatsApp' }
             ],
@@ -328,12 +329,14 @@
                 { id: 'dashboard', icon: 'fas fa-tachometer-alt', text: 'Dashboard', active: true },
                 { id: 'input-attendance', icon: 'fas fa-camera', text: 'Input Absensi' },
                 { id: 'my-attendance-reports', icon: 'fas fa-history', text: 'Rekapan Absensi Saya' },
-                { id: 'teacher-attendance', icon: 'fas fa-map-marker-alt', text: 'Kehadiran Guru' }
+                { id: 'teacher-attendance', icon: 'fas fa-map-marker-alt', text: 'Kehadiran Guru' },
+                { id: 'teacher-attendance-reports', icon: 'fas fa-chalkboard-teacher', text: 'Laporan Kehadiran Guru' }
             ],
             wali: [
                 { id: 'dashboard', icon: 'fas fa-tachometer-alt', text: 'Dashboard', active: true },
                 { id: 'class-attendance', icon: 'fas fa-eye', text: 'Absensi Kelas' },
                 { id: 'teacher-attendance', icon: 'fas fa-map-marker-alt', text: 'Kehadiran Guru' },
+                { id: 'teacher-attendance-reports', icon: 'fas fa-chalkboard-teacher', text: 'Laporan Kehadiran Guru' },
                 { id: 'class-categories', icon: 'fas fa-exclamation-triangle', text: 'Kategori Kehadiran' },
                 { id: 'class-whatsapp', icon: 'fas fa-comments', text: 'Pesan WhatsApp' }
             ],
@@ -342,6 +345,7 @@
                 { id: 'all-attendance', icon: 'fas fa-users', text: 'Absensi Siswa' },
                 { id: 'teacher-summary', icon: 'fas fa-chalkboard-teacher', text: 'Ringkasan Guru' },
                 { id: 'teacher-attendance', icon: 'fas fa-map-marker-alt', text: 'Kehadiran Guru' },
+                { id: 'teacher-attendance-reports', icon: 'fas fa-chalkboard-teacher', text: 'Laporan Kehadiran Guru' },
                 { id: 'school-categories', icon: 'fas fa-exclamation-triangle', text: 'Kategori Kehadiran' },
                 { id: 'school-whatsapp', icon: 'fas fa-comments', text: 'Pesan WhatsApp' }
             ]
@@ -450,6 +454,9 @@
                     break;
                 case 'teacher-attendance':
                     renderTeacherAttendance();
+                    break;
+                case 'teacher-attendance-reports':
+                    renderTeacherAttendanceReports();
                     break;
                 case 'attendance-categories':
                     renderAttendanceCategories();
@@ -1082,6 +1089,218 @@
                                     `).join('')}
                                 </tbody>
                             </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderTeacherAttendanceReports() {
+            const mainContent = document.getElementById('mainContent');
+            const pageTitle = currentUser.type === 'admin' ? 'Laporan Kehadiran Guru (Admin)' : 
+                             currentUser.type === 'kepala' ? 'Laporan Kehadiran Guru (Kepala Sekolah)' :
+                             currentUser.type === 'wali' ? 'Laporan Kehadiran Guru (Wali Kelas)' : 
+                             currentUser.type === 'guru' ? 'Laporan Kehadiran Guru' : 'Laporan Kehadiran Guru';
+            
+            // Sort teacher attendance by date and time (newest first)
+            const sortedTeacherAttendance = [...database.teacherAttendance].sort((a, b) => {
+                const dateTimeA = new Date(`${a.date} ${a.time}`);
+                const dateTimeB = new Date(`${b.date} ${b.time}`);
+                return dateTimeB - dateTimeA;
+            });
+            
+            mainContent.innerHTML = `
+                <div class="space-y-6">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-2xl font-bold text-gray-900">${pageTitle}</h2>
+                        <div class="text-sm text-gray-500">
+                            <i class="fas fa-database mr-1"></i>
+                            Total: ${database.teacherAttendance.length} laporan kehadiran
+                        </div>
+                    </div>
+
+                    <!-- Summary Stats -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="bg-white p-4 rounded-lg shadow-sm border">
+                            <div class="flex items-center">
+                                <div class="p-2 bg-blue-100 rounded-lg">
+                                    <i class="fas fa-clipboard-list text-blue-600"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm text-gray-600">Total Laporan</p>
+                                    <p class="text-xl font-bold">${database.teacherAttendance.length}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow-sm border">
+                            <div class="flex items-center">
+                                <div class="p-2 bg-green-100 rounded-lg">
+                                    <i class="fas fa-calendar-day text-green-600"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm text-gray-600">Hari Ini</p>
+                                    <p class="text-xl font-bold">${database.teacherAttendance.filter(ta => ta.date === new Date().toISOString().split('T')[0]).length}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow-sm border">
+                            <div class="flex items-center">
+                                <div class="p-2 bg-purple-100 rounded-lg">
+                                    <i class="fas fa-chalkboard-teacher text-purple-600"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm text-gray-600">Guru Aktif</p>
+                                    <p class="text-xl font-bold">${new Set(database.teacherAttendance.map(ta => ta.teacherId)).size}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow-sm border">
+                            <div class="flex items-center">
+                                <div class="p-2 bg-yellow-100 rounded-lg">
+                                    <i class="fas fa-map-marker-alt text-yellow-600"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm text-gray-600">Lokasi Unik</p>
+                                    <p class="text-xl font-bold">${new Set(database.teacherAttendance.map(ta => ta.coordinates)).size}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filters -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Filter Laporan Kehadiran Guru</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                            <div>
+                                <label for="reportFilterName" class="block text-sm font-medium text-gray-700 mb-2">Nama Guru</label>
+                                <select id="reportFilterName" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="">Semua Guru</option>
+                                    ${database.teachers.map(t => `<option value="${t.name}">${t.name}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div>
+                                <label for="reportFilterSubject" class="block text-sm font-medium text-gray-700 mb-2">Mata Pelajaran</label>
+                                <select id="reportFilterSubject" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="">Semua Mata Pelajaran</option>
+                                    ${[...new Set(database.teacherAttendance.map(ta => ta.subject))].map(subject => `<option value="${subject}">${subject}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div>
+                                <label for="reportFilterDateFrom" class="block text-sm font-medium text-gray-700 mb-2">Dari Tanggal</label>
+                                <input type="date" id="reportFilterDateFrom" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label for="reportFilterDateTo" class="block text-sm font-medium text-gray-700 mb-2">Sampai Tanggal</label>
+                                <input type="date" id="reportFilterDateTo" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="filterTeacherAttendanceReports()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200">
+                                <i class="fas fa-search mr-2"></i>Filter
+                            </button>
+                            <button onclick="resetTeacherReportsFilters()" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition duration-200">
+                                <i class="fas fa-refresh mr-2"></i>Reset
+                            </button>
+                            <button onclick="exportTeacherAttendanceReports()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition duration-200">
+                                <i class="fas fa-file-excel mr-2"></i>Export Excel
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Results Table -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                            <h3 class="text-lg font-semibold text-gray-900">Laporan Kehadiran Guru</h3>
+                            <div class="text-sm text-gray-500">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                Data tersimpan di localStorage browser
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Guru</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mata Pelajaran</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kelas</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kode Titik Lokasi</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal & Waktu</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="teacherAttendanceReportsTableBody" class="bg-white divide-y divide-gray-200">
+                                    ${sortedTeacherAttendance.map(ta => {
+                                        const teacher = database.teachers.find(t => t.id === ta.teacherId);
+                                        const dateTime = new Date(`${ta.date} ${ta.time}`);
+                                        const formattedDateTime = dateTime.toLocaleDateString('id-ID', { 
+                                            weekday: 'short', 
+                                            year: 'numeric', 
+                                            month: 'short', 
+                                            day: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit'
+                                        });
+                                        
+                                        return `
+                                            <tr class="hover:bg-gray-50">
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    <div class="flex items-center">
+                                                        <div class="flex-shrink-0 h-10 w-10">
+                                                            <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                                                                <i class="fas fa-chalkboard-teacher text-blue-600"></i>
+                                                            </div>
+                                                        </div>
+                                                        <div class="ml-4">
+                                                            <div class="text-sm font-medium text-gray-900">${teacher?.name || 'Guru Tidak Ditemukan'}</div>
+                                                            <div class="text-sm text-gray-500">${teacher?.uniqueCode || '-'}</div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                        ${ta.subject}
+                                                    </span>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                        ${ta.class}
+                                                    </span>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    <div class="text-sm font-mono text-gray-900 bg-gray-50 px-3 py-2 rounded-lg border">
+                                                        <div class="flex items-center">
+                                                            <i class="fas fa-map-pin text-red-500 mr-2"></i>
+                                                            <span>${ta.coordinates}</span>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    <div class="text-sm text-gray-900">${ta.date}</div>
+                                                    <div class="text-sm text-gray-500">${ta.time}</div>
+                                                    <div class="text-xs text-gray-400">${formattedDateTime}</div>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                                    <div class="flex space-x-2">
+                                                        <button onclick="viewTeacherReportDetail(${ta.id})" class="text-blue-600 hover:text-blue-900" title="Lihat Detail">
+                                                            <i class="fas fa-eye"></i>
+                                                        </button>
+                                                        <button onclick="viewLocationOnMap('${ta.coordinates}')" class="text-green-600 hover:text-green-900" title="Lihat di Peta">
+                                                            <i class="fas fa-map-marker-alt"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        `;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                            ${sortedTeacherAttendance.length === 0 ? `
+                                <div class="text-center py-12">
+                                    <i class="fas fa-clipboard-list text-gray-300 text-6xl mb-4"></i>
+                                    <h3 class="text-lg font-medium text-gray-900 mb-2">Belum Ada Laporan Kehadiran Guru</h3>
+                                    <p class="text-gray-500">Laporan kehadiran guru akan muncul setelah guru melakukan check-in.</p>
+                                </div>
+                            ` : ''}
                         </div>
                     </div>
                 </div>
@@ -2138,10 +2357,292 @@
 
         function resetTeacherFilters() {
             document.getElementById('teacherFilterName').value = '';
+            document.getElementById('teacherFilterSubject').value = '';
             document.getElementById('teacherFilterDateFrom').value = '';
             document.getElementById('teacherFilterDateTo').value = '';
             renderTeacherAttendance();
             showNotification('Filter berhasil direset!', 'success');
+        }
+
+        function filterTeacherAttendanceReports() {
+            const teacherName = document.getElementById('reportFilterName').value;
+            const subject = document.getElementById('reportFilterSubject').value;
+            const className = document.getElementById('reportFilterClass').value;
+            const dateFrom = document.getElementById('reportFilterDateFrom').value;
+            const dateTo = document.getElementById('reportFilterDateTo').value;
+
+            // Start with base data (filtered by user type)
+            let baseData = database.teacherAttendance;
+            if (currentUser.type === 'guru') {
+                const currentTeacher = database.teachers.find(t => t.uniqueCode === currentUser.uniqueCode);
+                if (currentTeacher) {
+                    baseData = database.teacherAttendance.filter(ta => ta.teacherId === currentTeacher.id);
+                }
+            }
+
+            let filteredData = baseData.filter(ta => {
+                const teacher = database.teachers.find(t => t.id === ta.teacherId);
+                
+                const matchTeacher = !teacherName || teacher?.name === teacherName;
+                const matchSubject = !subject || ta.subject === subject;
+                const matchClass = !className || ta.class === className;
+                const matchDateFrom = !dateFrom || ta.date >= dateFrom;
+                const matchDateTo = !dateTo || ta.date <= dateTo;
+
+                return matchTeacher && matchSubject && matchClass && matchDateFrom && matchDateTo;
+            });
+
+            updateTeacherAttendanceReportsTable(filteredData);
+            showNotification(`Filter diterapkan. Ditemukan ${filteredData.length} laporan kehadiran guru.`, 'success');
+        }
+
+        function resetTeacherReportsFilters() {
+            document.getElementById('reportFilterName').value = '';
+            document.getElementById('reportFilterSubject').value = '';
+            document.getElementById('reportFilterClass').value = '';
+            document.getElementById('reportFilterDateFrom').value = '';
+            document.getElementById('reportFilterDateTo').value = '';
+            renderTeacherAttendanceReports();
+            showNotification('Filter berhasil direset!', 'success');
+        }
+
+        function exportTeacherAttendanceReports() {
+            if (database.teacherAttendance.length === 0) {
+                showNotification('Tidak ada laporan kehadiran guru untuk diekspor!', 'error');
+                return;
+            }
+
+            // Create CSV content
+            const headers = ['Nama Guru', 'Kode Guru', 'Mata Pelajaran', 'Kelas', 'Kode Titik Lokasi', 'Tanggal', 'Waktu'];
+            const csvContent = [
+                headers.join(','),
+                ...database.teacherAttendance.map(ta => {
+                    const teacher = database.teachers.find(t => t.id === ta.teacherId);
+                    return [
+                        `"${teacher?.name || 'Guru Tidak Ditemukan'}"`,
+                        teacher?.uniqueCode || '-',
+                        `"${ta.subject}"`,
+                        ta.class,
+                        ta.coordinates,
+                        ta.date,
+                        ta.time
+                    ].join(',');
+                })
+            ].join('\n');
+
+            // Create and download file
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `laporan_kehadiran_guru_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showNotification(`Laporan kehadiran ${database.teacherAttendance.length} guru berhasil diekspor!`, 'success');
+        }
+
+        function viewTeacherReportDetail(attendanceId) {
+            const attendance = database.teacherAttendance.find(ta => ta.id === attendanceId);
+            if (!attendance) return;
+            
+            const teacher = database.teachers.find(t => t.id === attendance.teacherId);
+            const dateTime = new Date(`${attendance.date} ${attendance.time}`);
+            const formattedDateTime = dateTime.toLocaleDateString('id-ID', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            const modalContent = document.getElementById('modalContent');
+            modalContent.innerHTML = `
+                <div class="p-6 max-w-2xl">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-semibold text-gray-900">Detail Laporan Kehadiran Guru</h3>
+                        <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="space-y-6">
+                        <!-- Teacher Info -->
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-12 w-12">
+                                    <div class="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
+                                        <i class="fas fa-chalkboard-teacher text-blue-600 text-lg"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <h4 class="text-lg font-medium text-blue-900">${teacher?.name || 'Guru Tidak Ditemukan'}</h4>
+                                    <p class="text-blue-700">Kode: ${teacher?.uniqueCode || '-'}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Report Details -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-book text-gray-600 mr-2"></i>
+                                    <h5 class="font-medium text-gray-900">Mata Pelajaran</h5>
+                                </div>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                                    ${attendance.subject}
+                                </span>
+                            </div>
+                            
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-users text-gray-600 mr-2"></i>
+                                    <h5 class="font-medium text-gray-900">Kelas</h5>
+                                </div>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                                    ${attendance.class}
+                                </span>
+                            </div>
+                            
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-calendar-alt text-gray-600 mr-2"></i>
+                                    <h5 class="font-medium text-gray-900">Waktu Check-in</h5>
+                                </div>
+                                <p class="text-sm text-gray-700">${formattedDateTime}</p>
+                                <p class="text-xs text-gray-500 mt-1">${attendance.date} ${attendance.time}</p>
+                            </div>
+                            
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-map-pin text-gray-600 mr-2"></i>
+                                    <h5 class="font-medium text-gray-900">Kode Titik Lokasi</h5>
+                                </div>
+                                <p class="text-sm font-mono text-gray-700 bg-white px-2 py-1 rounded border">
+                                    ${attendance.coordinates}
+                                </p>
+                                <button onclick="viewLocationOnMap('${attendance.coordinates}')" class="mt-2 text-xs text-blue-600 hover:text-blue-800">
+                                    <i class="fas fa-external-link-alt mr-1"></i>Buka di Google Maps
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Location -->
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="flex items-center mb-2">
+                                <i class="fas fa-location-arrow text-gray-600 mr-2"></i>
+                                <h5 class="font-medium text-gray-900">Lokasi Lengkap</h5>
+                            </div>
+                            <p class="text-sm text-gray-700">${attendance.location}</p>
+                        </div>
+
+                        <!-- Material -->
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="flex items-center mb-2">
+                                <i class="fas fa-clipboard-list text-gray-600 mr-2"></i>
+                                <h5 class="font-medium text-gray-900">Materi Pembelajaran</h5>
+                            </div>
+                            <p class="text-sm text-gray-700 leading-relaxed">${attendance.material}</p>
+                        </div>
+
+                        <!-- Data Storage Info -->
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                            <div class="flex items-center">
+                                <i class="fas fa-info-circle text-yellow-600 mr-2"></i>
+                                <div>
+                                    <h5 class="font-medium text-yellow-800">Informasi Penyimpanan</h5>
+                                    <p class="text-sm text-yellow-700 mt-1">Data laporan kehadiran ini tersimpan di localStorage browser dan akan tetap ada hingga dihapus secara manual.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3 pt-6 border-t">
+                        <button onclick="closeModal()" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+                            <i class="fas fa-times mr-2"></i>Tutup
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.getElementById('modalContainer').classList.remove('hidden');
+        }
+
+        function updateTeacherAttendanceReportsTable(data) {
+            const tableBody = document.getElementById('teacherAttendanceReportsTableBody');
+            
+            // Sort data by date and time (newest first)
+            const sortedData = [...data].sort((a, b) => {
+                const dateTimeA = new Date(`${a.date} ${a.time}`);
+                const dateTimeB = new Date(`${b.date} ${b.time}`);
+                return dateTimeB - dateTimeA;
+            });
+            
+            tableBody.innerHTML = sortedData.map(ta => {
+                const teacher = database.teachers.find(t => t.id === ta.teacherId);
+                const dateTime = new Date(`${ta.date} ${ta.time}`);
+                const formattedDateTime = dateTime.toLocaleDateString('id-ID', { 
+                    weekday: 'short', 
+                    year: 'numeric', 
+                    month: 'short', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                return `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-10 w-10">
+                                    <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                                        <i class="fas fa-chalkboard-teacher text-blue-600"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-gray-900">${teacher?.name || 'Guru Tidak Ditemukan'}</div>
+                                    <div class="text-sm text-gray-500">${teacher?.uniqueCode || '-'}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                ${ta.subject}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                ${ta.class}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-mono text-gray-900 bg-gray-50 px-3 py-2 rounded-lg border">
+                                <div class="flex items-center">
+                                    <i class="fas fa-map-pin text-red-500 mr-2"></i>
+                                    <span>${ta.coordinates}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">${ta.date}</div>
+                            <div class="text-sm text-gray-500">${ta.time}</div>
+                            <div class="text-xs text-gray-400">${formattedDateTime}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div class="flex space-x-2">
+                                <button onclick="viewTeacherReportDetail(${ta.id})" class="text-blue-600 hover:text-blue-900" title="Lihat Detail">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button onclick="viewLocationOnMap('${ta.coordinates}')" class="text-green-600 hover:text-green-900" title="Lihat di Peta">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
         }
 
         function viewLocationOnMap(coordinates) {
@@ -4896,6 +5397,304 @@ ${schoolName}`
             showNotification(`${selectedIds.length} data kehadiran guru berhasil dihapus!`, 'success');
         }
 
+        // New admin functions for teacher attendance reports
+        function editTeacherReport(reportId) {
+            const report = database.teacherAttendance.find(ta => ta.id === reportId);
+            if (!report) return;
+            
+            const teacher = database.teachers.find(t => t.id === report.teacherId);
+            
+            const modalContent = document.getElementById('modalContent');
+            modalContent.innerHTML = `
+                <div class="p-6 max-w-2xl">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-semibold text-gray-900">Edit Laporan Kehadiran Guru</h3>
+                        <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <h4 class="font-medium text-blue-800 mb-2">Informasi Guru</h4>
+                        <div class="text-sm text-blue-700">
+                            <p><strong>Nama:</strong> ${teacher?.name}</p>
+                            <p><strong>Kode:</strong> ${teacher?.uniqueCode}</p>
+                        </div>
+                    </div>
+                    
+                    <form onsubmit="updateTeacherReport(event, ${reportId})" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="editReportDate" class="block text-sm font-medium text-gray-700 mb-2">Tanggal</label>
+                                <input type="date" id="editReportDate" value="${report.date}" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label for="editReportTime" class="block text-sm font-medium text-gray-700 mb-2">Waktu</label>
+                                <input type="time" id="editReportTime" value="${report.time}" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="editReportSubject" class="block text-sm font-medium text-gray-700 mb-2">Mata Pelajaran</label>
+                                <input type="text" id="editReportSubject" value="${report.subject}" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label for="editReportClass" class="block text-sm font-medium text-gray-700 mb-2">Kelas</label>
+                                <select id="editReportClass" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="X-1" ${report.class === 'X-1' ? 'selected' : ''}>X-1</option>
+                                    <option value="X-2" ${report.class === 'X-2' ? 'selected' : ''}>X-2</option>
+                                    <option value="XI-1" ${report.class === 'XI-1' ? 'selected' : ''}>XI-1</option>
+                                    <option value="XI-2" ${report.class === 'XI-2' ? 'selected' : ''}>XI-2</option>
+                                    <option value="XII-1" ${report.class === 'XII-1' ? 'selected' : ''}>XII-1</option>
+                                    <option value="XII-2" ${report.class === 'XII-2' ? 'selected' : ''}>XII-2</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label for="editReportLocation" class="block text-sm font-medium text-gray-700 mb-2">Lokasi</label>
+                            <input type="text" id="editReportLocation" value="${report.location}" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        
+                        <div>
+                            <label for="editReportCoordinates" class="block text-sm font-medium text-gray-700 mb-2">Koordinat</label>
+                            <input type="text" id="editReportCoordinates" value="${report.coordinates}" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="-6.200000, 106.816666">
+                            <p class="text-xs text-gray-500 mt-1">Format: latitude, longitude</p>
+                        </div>
+                        
+                        <div>
+                            <label for="editReportMaterial" class="block text-sm font-medium text-gray-700 mb-2">Materi Pembelajaran</label>
+                            <textarea id="editReportMaterial" rows="3" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">${report.material}</textarea>
+                        </div>
+                        
+                        <div class="flex justify-end space-x-3 pt-4">
+                            <button type="button" onclick="closeModal()" class="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+                                Batal
+                            </button>
+                            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                                <i class="fas fa-save mr-2"></i>Update Laporan
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            document.getElementById('modalContainer').classList.remove('hidden');
+        }
+
+        function updateTeacherReport(event, reportId) {
+            event.preventDefault();
+            
+            const date = document.getElementById('editReportDate').value;
+            const time = document.getElementById('editReportTime').value;
+            const subject = document.getElementById('editReportSubject').value.trim();
+            const className = document.getElementById('editReportClass').value;
+            const location = document.getElementById('editReportLocation').value.trim();
+            const coordinates = document.getElementById('editReportCoordinates').value.trim();
+            const material = document.getElementById('editReportMaterial').value.trim();
+            
+            if (!date || !time || !subject || !className || !location || !coordinates || !material) {
+                showNotification('Semua field harus diisi!', 'error');
+                return;
+            }
+            
+            // Validate coordinates format
+            const coordPattern = /^-?\d+\.?\d*,\s*-?\d+\.?\d*$/;
+            if (!coordPattern.test(coordinates)) {
+                showNotification('Format koordinat tidak valid! Gunakan format: latitude, longitude', 'error');
+                return;
+            }
+            
+            updateDatabase(() => {
+                const reportIndex = database.teacherAttendance.findIndex(ta => ta.id === reportId);
+                if (reportIndex !== -1) {
+                    database.teacherAttendance[reportIndex] = {
+                        ...database.teacherAttendance[reportIndex],
+                        date: date,
+                        time: time,
+                        subject: subject,
+                        class: className,
+                        location: location,
+                        coordinates: coordinates,
+                        material: material
+                    };
+                }
+            });
+            
+            closeModal();
+            renderTeacherAttendanceReports();
+            showNotification('Laporan kehadiran guru berhasil diupdate!', 'success');
+        }
+
+        function deleteTeacherReport(reportId) {
+            const report = database.teacherAttendance.find(ta => ta.id === reportId);
+            if (!report) return;
+            
+            const teacher = database.teachers.find(t => t.id === report.teacherId);
+            
+            const modalContent = document.getElementById('modalContent');
+            modalContent.innerHTML = `
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-semibold text-red-600">Konfirmasi Hapus Laporan Kehadiran Guru</h3>
+                        <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                            <div class="flex items-center">
+                                <i class="fas fa-exclamation-triangle text-red-500 mr-3"></i>
+                                <div>
+                                    <h4 class="font-medium text-red-800">Peringatan!</h4>
+                                    <p class="text-red-700 text-sm mt-1">Laporan kehadiran guru yang dihapus tidak dapat dikembalikan.</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <p class="text-gray-700">Apakah Anda yakin ingin menghapus laporan kehadiran berikut?</p>
+                        <div class="mt-3 p-3 bg-gray-50 rounded-lg">
+                            <p class="font-medium">${teacher?.name}</p>
+                            <p class="text-sm text-gray-600">Tanggal: ${report.date} ${report.time}</p>
+                            <p class="text-sm text-gray-600">Mata Pelajaran: ${report.subject}</p>
+                            <p class="text-sm text-gray-600">Kelas: ${report.class}</p>
+                            <p class="text-sm text-gray-600">Lokasi: ${report.location}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3">
+                        <button onclick="closeModal()" class="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+                            Batal
+                        </button>
+                        <button onclick="confirmDeleteTeacherReport(${reportId})" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                            <i class="fas fa-trash mr-2"></i>Hapus Laporan
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.getElementById('modalContainer').classList.remove('hidden');
+        }
+
+        function confirmDeleteTeacherReport(reportId) {
+            const report = database.teacherAttendance.find(ta => ta.id === reportId);
+            const teacher = database.teachers.find(t => t.id === report.teacherId);
+            
+            updateDatabase(() => {
+                database.teacherAttendance = database.teacherAttendance.filter(ta => ta.id !== reportId);
+            });
+            
+            closeModal();
+            renderTeacherAttendanceReports();
+            showNotification(`Laporan kehadiran ${teacher?.name} berhasil dihapus!`, 'success');
+        }
+
+        function showBulkDeleteByTeacher() {
+            const modalContent = document.getElementById('modalContent');
+            modalContent.innerHTML = `
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-semibold text-red-600">Hapus Laporan Kehadiran Berdasarkan Guru</h3>
+                        <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                            <div class="flex items-center">
+                                <i class="fas fa-info-circle text-yellow-500 mr-3"></i>
+                                <div>
+                                    <h4 class="font-medium text-yellow-800">Informasi</h4>
+                                    <p class="text-yellow-700 text-sm mt-1">Pilih guru untuk menghapus semua laporan kehadirannya.</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label for="bulkDeleteTeacher" class="block text-sm font-medium text-gray-700 mb-2">Pilih Guru</label>
+                                <select id="bulkDeleteTeacher" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="">Pilih Guru</option>
+                                    ${database.teachers.map(teacher => {
+                                        const reportCount = database.teacherAttendance.filter(ta => ta.teacherId === teacher.id).length;
+                                        return `<option value="${teacher.id}">${teacher.name} (${reportCount} laporan)</option>`;
+                                    }).join('')}
+                                </select>
+                            </div>
+                            
+                            <div id="teacherReportPreview" class="hidden bg-gray-50 border border-gray-200 rounded-lg p-4">
+                                <h4 class="font-medium text-gray-800 mb-2">Laporan yang akan dihapus:</h4>
+                                <div id="reportsList" class="max-h-40 overflow-y-auto"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3">
+                        <button onclick="closeModal()" class="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+                            Batal
+                        </button>
+                        <button onclick="confirmBulkDeleteByTeacher()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                            <i class="fas fa-trash mr-2"></i>Hapus Semua Laporan
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            // Add event listener for teacher selection
+            setTimeout(() => {
+                document.getElementById('bulkDeleteTeacher').addEventListener('change', function() {
+                    const teacherId = parseInt(this.value);
+                    const preview = document.getElementById('teacherReportPreview');
+                    const reportsList = document.getElementById('reportsList');
+                    
+                    if (teacherId) {
+                        const teacherReports = database.teacherAttendance.filter(ta => ta.teacherId === teacherId);
+                        if (teacherReports.length > 0) {
+                            preview.classList.remove('hidden');
+                            reportsList.innerHTML = teacherReports.map(report => `
+                                <div class="flex justify-between items-center py-1 text-sm border-b border-gray-200 last:border-b-0">
+                                    <span>${report.date} ${report.time} - ${report.subject} (${report.class})</span>
+                                    <span class="text-gray-500">${report.location}</span>
+                                </div>
+                            `).join('');
+                        } else {
+                            preview.classList.add('hidden');
+                        }
+                    } else {
+                        preview.classList.add('hidden');
+                    }
+                });
+            }, 100);
+            
+            document.getElementById('modalContainer').classList.remove('hidden');
+        }
+
+        function confirmBulkDeleteByTeacher() {
+            const teacherId = parseInt(document.getElementById('bulkDeleteTeacher').value);
+            
+            if (!teacherId) {
+                showNotification('Pilih guru terlebih dahulu!', 'error');
+                return;
+            }
+            
+            const teacher = database.teachers.find(t => t.id === teacherId);
+            const teacherReports = database.teacherAttendance.filter(ta => ta.teacherId === teacherId);
+            
+            if (teacherReports.length === 0) {
+                showNotification('Tidak ada laporan kehadiran untuk guru ini!', 'info');
+                return;
+            }
+            
+            updateDatabase(() => {
+                database.teacherAttendance = database.teacherAttendance.filter(ta => ta.teacherId !== teacherId);
+            });
+            
+            closeModal();
+            renderTeacherAttendanceReports();
+            showNotification(`${teacherReports.length} laporan kehadiran ${teacher?.name} berhasil dihapus!`, 'success');
+        }
+
         // Handle Enter key on login
         document.getElementById('uniqueCode').addEventListener('keyup', function(event) {
             if (event.key === 'Enter') {
@@ -4903,5 +5702,5 @@ ${schoolName}`
             }
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'990f5ebd2343fe8a',t:'MTc2MDg2NzQxNC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'990f980bc0755f60',t:'MTc2MDg2OTc2Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
