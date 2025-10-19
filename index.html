@@ -1009,6 +1009,34 @@
                         </div>
                     </div>
 
+                    <!-- Bulk Delete Options -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Hapus Data Siswa Massal</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="bulkDeleteClass" class="block text-sm font-medium text-gray-700 mb-2">Hapus Berdasarkan Kelas</label>
+                                <div class="flex space-x-2">
+                                    <select id="bulkDeleteClass" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        <option value="">Pilih Kelas</option>
+                                        ${[...new Set(database.students.map(s => s.class))].sort().map(className => {
+                                            const count = database.students.filter(s => s.class === className).length;
+                                            return `<option value="${className}">${className} (${count} siswa)</option>`;
+                                        }).join('')}
+                                    </select>
+                                    <button onclick="showBulkDeleteStudentsByClass()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition duration-200">
+                                        <i class="fas fa-trash mr-2"></i>Hapus Kelas
+                                    </button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Hapus Yang Dipilih</label>
+                                <button onclick="showBulkDeleteSelectedStudents()" class="w-full px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition duration-200">
+                                    <i class="fas fa-trash-alt mr-2"></i>Hapus Siswa Terpilih
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Students Table -->
                     <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                         <div class="px-6 py-4 border-b border-gray-200">
@@ -1018,6 +1046,9 @@
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-gray-50">
                                     <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <input type="checkbox" id="selectAllStudents" onchange="toggleAllStudentsSelection()" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        </th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NISN</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Siswa</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kelas</th>
@@ -1028,6 +1059,9 @@
                                 <tbody class="bg-white divide-y divide-gray-200">
                                     ${database.students.map(student => `
                                         <tr class="hover:bg-gray-50">
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <input type="checkbox" class="student-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500" value="${student.id}">
+                                            </td>
                                             <td class="px-6 py-4 whitespace-nowrap">
                                                 <span class="font-mono text-sm font-medium text-gray-900">${student.nisn}</span>
                                             </td>
@@ -1060,19 +1094,87 @@
                              currentUser.type === 'kepala' ? 'Kehadiran Guru (Kepala Sekolah)' :
                              currentUser.type === 'wali' ? 'Kehadiran Guru (Wali Kelas)' : 'Kehadiran Guru';
             
+            // Sort teacher attendance by date and time (newest first)
+            const sortedTeacherAttendance = [...database.teacherAttendance].sort((a, b) => {
+                const dateTimeA = new Date(`${a.date} ${a.time}`);
+                const dateTimeB = new Date(`${b.date} ${b.time}`);
+                return dateTimeB - dateTimeA;
+            });
+            
             mainContent.innerHTML = `
                 <div class="space-y-6">
-                    <h2 class="text-2xl font-bold text-gray-900">${pageTitle}</h2>
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-2xl font-bold text-gray-900">${pageTitle}</h2>
+                        <div class="text-sm text-gray-500">
+                            <i class="fas fa-database mr-1"></i>
+                            Total: ${database.teacherAttendance.length} data kehadiran
+                        </div>
+                    </div>
+
+                    <!-- Summary Stats -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="bg-white p-4 rounded-lg shadow-sm border">
+                            <div class="flex items-center">
+                                <div class="p-2 bg-blue-100 rounded-lg">
+                                    <i class="fas fa-chalkboard-teacher text-blue-600"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm text-gray-600">Total Kehadiran</p>
+                                    <p class="text-xl font-bold">${database.teacherAttendance.length}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow-sm border">
+                            <div class="flex items-center">
+                                <div class="p-2 bg-green-100 rounded-lg">
+                                    <i class="fas fa-calendar-day text-green-600"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm text-gray-600">Hari Ini</p>
+                                    <p class="text-xl font-bold">${database.teacherAttendance.filter(ta => ta.date === new Date().toISOString().split('T')[0]).length}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow-sm border">
+                            <div class="flex items-center">
+                                <div class="p-2 bg-purple-100 rounded-lg">
+                                    <i class="fas fa-users text-purple-600"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm text-gray-600">Guru Aktif</p>
+                                    <p class="text-xl font-bold">${new Set(database.teacherAttendance.map(ta => ta.teacherId)).size}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow-sm border">
+                            <div class="flex items-center">
+                                <div class="p-2 bg-yellow-100 rounded-lg">
+                                    <i class="fas fa-map-marker-alt text-yellow-600"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm text-gray-600">Lokasi Unik</p>
+                                    <p class="text-xl font-bold">${new Set(database.teacherAttendance.map(ta => ta.location)).size}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
                     <!-- Filters -->
                     <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                         <h3 class="text-lg font-semibold text-gray-900 mb-4">Filter Kehadiran Guru</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                             <div>
                                 <label for="teacherFilterName" class="block text-sm font-medium text-gray-700 mb-2">Nama Guru</label>
                                 <select id="teacherFilterName" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                                     <option value="">Semua Guru</option>
                                     ${database.teachers.map(t => `<option value="${t.name}">${t.name}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div>
+                                <label for="teacherFilterSubject" class="block text-sm font-medium text-gray-700 mb-2">Mata Pelajaran</label>
+                                <select id="teacherFilterSubject" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="">Semua Mata Pelajaran</option>
+                                    ${[...new Set(database.teacherAttendance.map(ta => ta.subject))].map(subject => `<option value="${subject}">${subject}</option>`).join('')}
                                 </select>
                             </div>
                             <div>
@@ -1091,6 +1193,9 @@
                             <button onclick="resetTeacherFilters()" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition duration-200">
                                 <i class="fas fa-refresh mr-2"></i>Reset
                             </button>
+                            <button onclick="exportTeacherAttendance()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition duration-200">
+                                <i class="fas fa-file-excel mr-2"></i>Export Excel
+                            </button>
                             <button onclick="showBulkDeleteTeacherAttendance()" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition duration-200">
                                 <i class="fas fa-trash mr-2"></i>Hapus Massal
                             </button>
@@ -1099,59 +1204,125 @@
 
                     <!-- Results Table -->
                     <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                        <div class="px-6 py-4 border-b border-gray-200">
+                        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
                             <h3 class="text-lg font-semibold text-gray-900">Data Kehadiran Guru</h3>
+                            <div class="text-sm text-gray-500">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                Data tersimpan di localStorage browser
+                            </div>
                         </div>
                         <div class="overflow-x-auto">
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-gray-50">
                                     <tr>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                             <input type="checkbox" id="selectAllTeacherAttendance" onchange="toggleAllTeacherAttendanceSelection()" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
                                         </th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waktu</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Guru</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mata Pelajaran</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kelas</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lokasi</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Koordinat</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Materi</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal & Waktu</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Guru</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mata Pelajaran</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kelas</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lokasi Perangkat</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Koordinat GPS</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Materi Pembelajaran</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody id="teacherAttendanceTableBody" class="bg-white divide-y divide-gray-200">
-                                    ${database.teacherAttendance.map(ta => {
+                                    ${sortedTeacherAttendance.map(ta => {
                                         const teacher = database.teachers.find(t => t.id === ta.teacherId);
+                                        const dateTime = new Date(`${ta.date} ${ta.time}`);
+                                        const formattedDateTime = dateTime.toLocaleDateString('id-ID', { 
+                                            weekday: 'short', 
+                                            year: 'numeric', 
+                                            month: 'short', 
+                                            day: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit'
+                                        });
+                                        
                                         return `
                                             <tr class="hover:bg-gray-50">
-                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                <td class="px-4 py-4 whitespace-nowrap">
                                                     <input type="checkbox" class="teacher-attendance-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500" value="${ta.id}">
                                                 </td>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${ta.date}</td>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${ta.time}</td>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${teacher?.name}</td>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${ta.subject}</td>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${ta.class}</td>
-                                                <td class="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">${ta.location}</td>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${ta.coordinates}</td>
-                                                <td class="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">${ta.material}</td>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                                                    <button onclick="viewLocationOnMap('${ta.coordinates}')" class="text-blue-600 hover:text-blue-900" title="Lihat Lokasi">
-                                                        <i class="fas fa-map-marker-alt"></i>
-                                                    </button>
-                                                    <button onclick="editTeacherLocation(${ta.id})" class="text-green-600 hover:text-green-900" title="Edit Lokasi">
-                                                        <i class="fas fa-edit"></i>
-                                                    </button>
-                                                    <button onclick="deleteTeacherAttendance(${ta.id})" class="text-red-600 hover:text-red-900" title="Hapus Data">
-                                                        <i class="fas fa-trash"></i>
-                                                    </button>
+                                                <td class="px-4 py-4 whitespace-nowrap">
+                                                    <div class="text-sm font-medium text-gray-900">${ta.date}</div>
+                                                    <div class="text-sm text-gray-500">${ta.time}</div>
+                                                    <div class="text-xs text-gray-400">${formattedDateTime}</div>
+                                                </td>
+                                                <td class="px-4 py-4 whitespace-nowrap">
+                                                    <div class="flex items-center">
+                                                        <div class="flex-shrink-0 h-8 w-8">
+                                                            <div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                                                                <i class="fas fa-user text-blue-600 text-sm"></i>
+                                                            </div>
+                                                        </div>
+                                                        <div class="ml-3">
+                                                            <div class="text-sm font-medium text-gray-900">${teacher?.name || 'Guru Tidak Ditemukan'}</div>
+                                                            <div class="text-sm text-gray-500">${teacher?.uniqueCode || '-'}</div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td class="px-4 py-4 whitespace-nowrap">
+                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                        ${ta.subject}
+                                                    </span>
+                                                </td>
+                                                <td class="px-4 py-4 whitespace-nowrap">
+                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                        ${ta.class}
+                                                    </span>
+                                                </td>
+                                                <td class="px-4 py-4">
+                                                    <div class="text-sm text-gray-900 max-w-xs">
+                                                        <div class="flex items-center">
+                                                            <i class="fas fa-map-marker-alt text-red-500 mr-2"></i>
+                                                            <span class="truncate">${ta.location}</span>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td class="px-4 py-4 whitespace-nowrap">
+                                                    <div class="text-sm font-mono text-gray-600 bg-gray-50 px-2 py-1 rounded">
+                                                        ${ta.coordinates}
+                                                    </div>
+                                                </td>
+                                                <td class="px-4 py-4">
+                                                    <div class="text-sm text-gray-900 max-w-xs">
+                                                        <div class="truncate" title="${ta.material}">
+                                                            <i class="fas fa-book text-purple-500 mr-2"></i>
+                                                            ${ta.material}
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td class="px-4 py-4 whitespace-nowrap text-sm font-medium">
+                                                    <div class="flex space-x-2">
+                                                        <button onclick="viewTeacherAttendanceDetail(${ta.id})" class="text-blue-600 hover:text-blue-900" title="Lihat Detail">
+                                                            <i class="fas fa-eye"></i>
+                                                        </button>
+                                                        <button onclick="viewLocationOnMap('${ta.coordinates}')" class="text-green-600 hover:text-green-900" title="Lihat di Peta">
+                                                            <i class="fas fa-map-marker-alt"></i>
+                                                        </button>
+                                                        <button onclick="editTeacherLocation(${ta.id})" class="text-yellow-600 hover:text-yellow-900" title="Edit Lokasi">
+                                                            <i class="fas fa-edit"></i>
+                                                        </button>
+                                                        <button onclick="deleteTeacherAttendance(${ta.id})" class="text-red-600 hover:text-red-900" title="Hapus Data">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         `;
                                     }).join('')}
                                 </tbody>
                             </table>
+                            ${sortedTeacherAttendance.length === 0 ? `
+                                <div class="text-center py-12">
+                                    <i class="fas fa-clipboard-list text-gray-300 text-6xl mb-4"></i>
+                                    <h3 class="text-lg font-medium text-gray-900 mb-2">Belum Ada Data Kehadiran Guru</h3>
+                                    <p class="text-gray-500">Data kehadiran guru akan muncul setelah guru melakukan check-in.</p>
+                                </div>
+                            ` : ''}
                         </div>
                     </div>
                 </div>
@@ -2030,6 +2201,7 @@
 
         function filterTeacherAttendance() {
             const teacherName = document.getElementById('teacherFilterName').value;
+            const subject = document.getElementById('teacherFilterSubject').value;
             const dateFrom = document.getElementById('teacherFilterDateFrom').value;
             const dateTo = document.getElementById('teacherFilterDateTo').value;
 
@@ -2037,14 +2209,184 @@
                 const teacher = database.teachers.find(t => t.id === ta.teacherId);
                 
                 const matchTeacher = !teacherName || teacher?.name === teacherName;
+                const matchSubject = !subject || ta.subject === subject;
                 const matchDateFrom = !dateFrom || ta.date >= dateFrom;
                 const matchDateTo = !dateTo || ta.date <= dateTo;
 
-                return matchTeacher && matchDateFrom && matchDateTo;
+                return matchTeacher && matchSubject && matchDateFrom && matchDateTo;
             });
 
             updateTeacherAttendanceTable(filteredData);
-            showNotification(`Filter diterapkan. Ditemukan ${filteredData.length} data.`, 'success');
+            showNotification(`Filter diterapkan. Ditemukan ${filteredData.length} data kehadiran guru.`, 'success');
+        }
+
+        function viewTeacherAttendanceDetail(attendanceId) {
+            const attendance = database.teacherAttendance.find(ta => ta.id === attendanceId);
+            if (!attendance) return;
+            
+            const teacher = database.teachers.find(t => t.id === attendance.teacherId);
+            const dateTime = new Date(`${attendance.date} ${attendance.time}`);
+            const formattedDateTime = dateTime.toLocaleDateString('id-ID', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            const modalContent = document.getElementById('modalContent');
+            modalContent.innerHTML = `
+                <div class="p-6 max-w-2xl">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-semibold text-gray-900">Detail Kehadiran Guru</h3>
+                        <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="space-y-6">
+                        <!-- Teacher Info -->
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-12 w-12">
+                                    <div class="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
+                                        <i class="fas fa-chalkboard-teacher text-blue-600 text-lg"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <h4 class="text-lg font-medium text-blue-900">${teacher?.name || 'Guru Tidak Ditemukan'}</h4>
+                                    <p class="text-blue-700">Kode: ${teacher?.uniqueCode || '-'}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Attendance Details -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-calendar-alt text-gray-600 mr-2"></i>
+                                    <h5 class="font-medium text-gray-900">Waktu Kehadiran</h5>
+                                </div>
+                                <p class="text-sm text-gray-700">${formattedDateTime}</p>
+                                <p class="text-xs text-gray-500 mt-1">${attendance.date} ${attendance.time}</p>
+                            </div>
+                            
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-book text-gray-600 mr-2"></i>
+                                    <h5 class="font-medium text-gray-900">Mata Pelajaran</h5>
+                                </div>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                                    ${attendance.subject}
+                                </span>
+                            </div>
+                            
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-users text-gray-600 mr-2"></i>
+                                    <h5 class="font-medium text-gray-900">Kelas</h5>
+                                </div>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                                    ${attendance.class}
+                                </span>
+                            </div>
+                            
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-map-marker-alt text-gray-600 mr-2"></i>
+                                    <h5 class="font-medium text-gray-900">Koordinat GPS</h5>
+                                </div>
+                                <p class="text-sm font-mono text-gray-700 bg-white px-2 py-1 rounded border">
+                                    ${attendance.coordinates}
+                                </p>
+                                <button onclick="viewLocationOnMap('${attendance.coordinates}')" class="mt-2 text-xs text-blue-600 hover:text-blue-800">
+                                    <i class="fas fa-external-link-alt mr-1"></i>Buka di Google Maps
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Location -->
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="flex items-center mb-2">
+                                <i class="fas fa-location-arrow text-gray-600 mr-2"></i>
+                                <h5 class="font-medium text-gray-900">Lokasi Perangkat</h5>
+                            </div>
+                            <p class="text-sm text-gray-700">${attendance.location}</p>
+                        </div>
+
+                        <!-- Material -->
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="flex items-center mb-2">
+                                <i class="fas fa-clipboard-list text-gray-600 mr-2"></i>
+                                <h5 class="font-medium text-gray-900">Materi Pembelajaran</h5>
+                            </div>
+                            <p class="text-sm text-gray-700 leading-relaxed">${attendance.material}</p>
+                        </div>
+
+                        <!-- Data Storage Info -->
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                            <div class="flex items-center">
+                                <i class="fas fa-info-circle text-yellow-600 mr-2"></i>
+                                <div>
+                                    <h5 class="font-medium text-yellow-800">Informasi Penyimpanan</h5>
+                                    <p class="text-sm text-yellow-700 mt-1">Data ini tersimpan di localStorage browser dan akan tetap ada hingga dihapus secara manual.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3 pt-6 border-t">
+                        <button onclick="editTeacherLocation(${attendanceId})" class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700">
+                            <i class="fas fa-edit mr-2"></i>Edit Lokasi
+                        </button>
+                        <button onclick="closeModal()" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+                            <i class="fas fa-times mr-2"></i>Tutup
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.getElementById('modalContainer').classList.remove('hidden');
+        }
+
+        function exportTeacherAttendance() {
+            if (database.teacherAttendance.length === 0) {
+                showNotification('Tidak ada data kehadiran guru untuk diekspor!', 'error');
+                return;
+            }
+
+            // Create CSV content
+            const headers = ['Tanggal', 'Waktu', 'Nama Guru', 'Kode Guru', 'Mata Pelajaran', 'Kelas', 'Lokasi Perangkat', 'Koordinat GPS', 'Materi Pembelajaran'];
+            const csvContent = [
+                headers.join(','),
+                ...database.teacherAttendance.map(ta => {
+                    const teacher = database.teachers.find(t => t.id === ta.teacherId);
+                    return [
+                        ta.date,
+                        ta.time,
+                        `"${teacher?.name || 'Guru Tidak Ditemukan'}"`,
+                        teacher?.uniqueCode || '-',
+                        `"${ta.subject}"`,
+                        ta.class,
+                        `"${ta.location}"`,
+                        ta.coordinates,
+                        `"${ta.material}"`
+                    ].join(',');
+                })
+            ].join('\n');
+
+            // Create and download file
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `kehadiran_guru_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showNotification(`Data kehadiran ${database.teacherAttendance.length} guru berhasil diekspor!`, 'success');
         }
 
         // Update table functions
@@ -2125,31 +2467,95 @@
 
         function updateTeacherAttendanceTable(data) {
             const tableBody = document.getElementById('teacherAttendanceTableBody');
-            tableBody.innerHTML = data.map(ta => {
+            
+            // Sort data by date and time (newest first)
+            const sortedData = [...data].sort((a, b) => {
+                const dateTimeA = new Date(`${a.date} ${a.time}`);
+                const dateTimeB = new Date(`${b.date} ${b.time}`);
+                return dateTimeB - dateTimeA;
+            });
+            
+            tableBody.innerHTML = sortedData.map(ta => {
                 const teacher = database.teachers.find(t => t.id === ta.teacherId);
+                const dateTime = new Date(`${ta.date} ${ta.time}`);
+                const formattedDateTime = dateTime.toLocaleDateString('id-ID', { 
+                    weekday: 'short', 
+                    year: 'numeric', 
+                    month: 'short', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
                 return `
                     <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 whitespace-nowrap">
+                        <td class="px-4 py-4 whitespace-nowrap">
                             <input type="checkbox" class="teacher-attendance-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500" value="${ta.id}">
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${ta.date}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${ta.time}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${teacher?.name}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${ta.subject}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${ta.class}</td>
-                        <td class="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">${ta.location}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${ta.coordinates}</td>
-                        <td class="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">${ta.material}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                            <button onclick="viewLocationOnMap('${ta.coordinates}')" class="text-blue-600 hover:text-blue-900" title="Lihat Lokasi">
-                                <i class="fas fa-map-marker-alt"></i>
-                            </button>
-                            <button onclick="editTeacherLocation(${ta.id})" class="text-green-600 hover:text-green-900" title="Edit Lokasi">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button onclick="deleteTeacherAttendance(${ta.id})" class="text-red-600 hover:text-red-900" title="Hapus Data">
-                                <i class="fas fa-trash"></i>
-                            </button>
+                        <td class="px-4 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">${ta.date}</div>
+                            <div class="text-sm text-gray-500">${ta.time}</div>
+                            <div class="text-xs text-gray-400">${formattedDateTime}</div>
+                        </td>
+                        <td class="px-4 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-8 w-8">
+                                    <div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                                        <i class="fas fa-user text-blue-600 text-sm"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-3">
+                                    <div class="text-sm font-medium text-gray-900">${teacher?.name || 'Guru Tidak Ditemukan'}</div>
+                                    <div class="text-sm text-gray-500">${teacher?.uniqueCode || '-'}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-4 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                ${ta.subject}
+                            </span>
+                        </td>
+                        <td class="px-4 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                ${ta.class}
+                            </span>
+                        </td>
+                        <td class="px-4 py-4">
+                            <div class="text-sm text-gray-900 max-w-xs">
+                                <div class="flex items-center">
+                                    <i class="fas fa-map-marker-alt text-red-500 mr-2"></i>
+                                    <span class="truncate">${ta.location}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-4 py-4 whitespace-nowrap">
+                            <div class="text-sm font-mono text-gray-600 bg-gray-50 px-2 py-1 rounded">
+                                ${ta.coordinates}
+                            </div>
+                        </td>
+                        <td class="px-4 py-4">
+                            <div class="text-sm text-gray-900 max-w-xs">
+                                <div class="truncate" title="${ta.material}">
+                                    <i class="fas fa-book text-purple-500 mr-2"></i>
+                                    ${ta.material}
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm font-medium">
+                            <div class="flex space-x-2">
+                                <button onclick="viewTeacherAttendanceDetail(${ta.id})" class="text-blue-600 hover:text-blue-900" title="Lihat Detail">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button onclick="viewLocationOnMap('${ta.coordinates}')" class="text-green-600 hover:text-green-900" title="Lihat di Peta">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                </button>
+                                <button onclick="editTeacherLocation(${ta.id})" class="text-yellow-600 hover:text-yellow-900" title="Edit Lokasi">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="deleteTeacherAttendance(${ta.id})" class="text-red-600 hover:text-red-900" title="Hapus Data">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
                         </td>
                     </tr>
                 `;
@@ -4497,5 +4903,5 @@ ${schoolName}`
             }
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'990f3996f459fe8a',t:'MTc2MDg2NTg5NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'990f5ebd2343fe8a',t:'MTc2MDg2NzQxNC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
